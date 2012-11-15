@@ -18,14 +18,23 @@
     </head>
     <body>
     <div class="container-fluid" style="margin-top:0px">
-        <div id="title" class="label">
-            <h1>SchoolMaps</h1>
+        <div id="title" class="">
+            <h1 class="pull-left">SchoolMaps</h1>
+            
         </div>
         <div id="map"></div>
     </div>
     <footer class="navbar-fixed-bottom">
         <div class="container">
-            Created by the $TEAMNAME on the 2012 pan-pearson hackathon 
+            <div class="row">
+            <div class="span9">
+                <p><small>Created by the $TEAMNAME for the 2012 Pan-Pearson hackathon. Uses Backbone.js, polymaps, d3.js, miso dataset and several litres of coffee :)</small></p>
+
+             </div>
+            <div class="span3">
+                <img src="images/Pearson_logo.png" class="pull-right" id="pearsonLogo"/> 
+            </div>
+            </div>
         </div>
     </footer>
 
@@ -49,6 +58,11 @@
         </script>
     
     <!-- build:js scripts/plugins.js -->
+    <script src="scripts/vendor/underscore.js"></script>
+    <script src="scripts/vendor/backbone.js"></script>
+    <script src="scripts/vendor/miso.ds.deps.js"></script>
+    <script src="scripts/vendor/d3.v2.js"></script>
+    <script src="scripts/vendor/polymaps.js"></script>
     <script src="scripts/vendor/bootstrap/bootstrap-affix.js"></script>
     <script src="scripts/vendor/bootstrap/bootstrap-alert.js"></script>
     <script src="scripts/vendor/bootstrap/bootstrap-dropdown.js"></script>
@@ -62,8 +76,6 @@
     <script src="scripts/vendor/bootstrap/bootstrap-scrollspy.js"></script>
     <script src="scripts/vendor/bootstrap/bootstrap-collapse.js"></script>
     <script src="scripts/vendor/bootstrap/bootstrap-tab.js"></script>
-    <script src="scripts/vendor/d3.v2.js"></script>
-    <script src="scripts/vendor/polymaps.js"></script>
     <!-- endbuild -->
 
     <!-- build:js scripts/amd-app.js -->
