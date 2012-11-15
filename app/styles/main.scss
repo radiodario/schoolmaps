@@ -17,18 +17,18 @@ body {
   padding-left: 1em;
 
 
-  background: linear-gradient(bottom, rgba(204,204,204,0.85) 37%, rgba(212,212,212,0.85) 69%);
-  background: -o-linear-gradient(bottom, rgba(204,204,204,0.85) 37%, rgba(212,212,212,0.85) 69%);
-  background: -moz-linear-gradient(bottom, rgba(204,204,204,0.85) 37%, rgba(212,212,212,0.85) 69%);
-  background: -webkit-linear-gradient(bottom, rgba(204,204,204,0.85) 37%, rgba(212,212,212,0.85) 69%);
-  background: -ms-linear-gradient(bottom, rgba(204,204,204,0.85) 37%, rgba(212,212,212,0.85) 69%);
+  background: linear-gradient(bottom, rgba(24,24,24,0.85) 37%, rgba(30,30,30,0.85) 69%);
+  background: -o-linear-gradient(bottom, rgba(24,24,24,0.85) 37%, rgba(30,30,30,0.85) 69%);
+  background: -moz-linear-gradient(bottom, rgba(24,24,24,0.85) 37%, rgba(30,30,30,0.85) 69%);
+  background: -webkit-linear-gradient(bottom, rgba(24,24,24,0.85) 37%, rgba(30,30,30,0.85) 69%);
+  background: -ms-linear-gradient(bottom, rgba(24,24,24,0.85) 37%, rgba(30,30,30,0.85) 69%);
 
   background: -webkit-gradient(
     linear,
     left bottom,
     left top,
-    color-stop(0.37, rgba(204,204,204,0.85)),
-    color-stop(0.69, rgba(212,212,212,0.85))
+    color-stop(0.37, rgba(24,24,24,0.85)),
+    color-stop(0.69, rgba(30,30,30,0.85))
   );
 
   -moz-box-shadow: 1px 1px 1px #888;
@@ -48,8 +48,9 @@ div#map {
 
 
 footer {
-    color: #666;
-    background: rgba(24,24,24,0.9);
+    height: 43px;
+    color: #DDD;
+    background: rgba(54,67,147,0.9);
     padding: 5px 0 5px 0;
     border-top: 1px solid #000;    
 }
@@ -99,4 +100,16 @@ footer a:hover {
 
 .compass.active .active .direction {
   fill: #999;
+}
+
+#slider {
+  margin:1em 2em;
+}
+
+a.schoolNet {
+  background-color: #AAA;
+  display: block;
+  width: 190px;
+  height: 55px;
+  background: url(../images/schoolnet_logo.png) 0 -446px no-repeat;
 }

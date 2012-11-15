@@ -83,15 +83,14 @@ define([], function() {
 
         ]
 
-
         // Define the underlying dataset for this interactive, a CSV file containing 
         // all schools
         // (source = )
         SchoolMaps.schools = new Miso.Dataset({
           
-          url: "data/schools.tsv",
-          delimiter: ",",
-          columns: SchoolMaps.schoolColumns,
+          url: "data/schools.csv",
+          delimiter: ',',
+          //columns: SchoolMaps.schoolColumns,
           
           ready : function() {
             console.log('Links Ready!')
@@ -110,7 +109,7 @@ define([], function() {
         })
 
         _.when(SchoolMaps.schools.fetch(), SchoolMaps.links.fetch()).then(function() {
-          console.log("data loaded")
+          console.log("data loaded", SchoolMaps.schools.toJSON())
           SchoolMaps.app = new SchoolMaps.Views.Main();
           SchoolMaps.app.render();
         });
@@ -134,178 +133,262 @@ define([], function() {
 
 
   SchoolMaps.Views.Main = Backbone.View.extend({
+    el: 'body',
     initialize : function() {
       this.views = {};
     },
-
+    events: {
+      'change #slide' : 'onSlide'
+    },
     render : function() {
       // this.views.title = new SchoolMaps.Views.Title();
       // this.views.footer = new SchoolMaps.View.Footer();
       // this.views.dateranges = new SchoolMaps.Views.DateRanges();
       this.views.map = new SchoolMaps.Views.Map();
-
+      this.views.years = new SchoolMaps.Views.Years();
       // this.views.title.render();
       // this.views.dateranges.render();
       this.views.map.render();
-    } 
+      this.views.years.render();
+    },
+    onSlide: function(event) {
+      var year = +event.target.value;
+      console.log(year);
+      $('#year').html(year);
+      this.views.map.setYear(year)
+    }
 
   });
+
+  SchoolMaps.Views.Years = Backbone.View.extend({
+    el: '#slider',
+    template: _.template($('#slider-template').html()),
+
+    initialize: function(options) {
+
+    },
+    render: function() {
+      $(this.el).html(this.template())
+    }
+  });
+
 
   SchoolMaps.Views.Map = Backbone.View.extend({
 
     el: '#map',
     initialize: function(options) {
+      this.container = d3.select("#map").append("svg:svg").node();
+      this.scale = d3.scale.linear().range([5,30]).domain([0,1500]);
+      this.colorScale = d3.scale.linear()
+        .range(["#FE326B","#888","#A5EDDA"]).domain([-50,0,50])
+        //.range(["#FE326B", "#FE326B"])
+      this.year = 2010;
+      this.po = org.polymaps;
+      this.center = {lat: 40.00, lon:-75.1642};
+      this.map = this.po.map()
+          .container(this.container)
+          .zoom(11)
+          .center(this.center)
+          .add(this.po.interact());
 
-    },
-
-
-
-
-    render : function () {
-      var po = org.polymaps;
-      var container = d3.select("#map").append("svg:svg").node();
-      var center = {lon: -98.5795, lat: 37.828175};
-
-      var map = po.map()
-          .container(container)
-          .zoom(4.5)
-          .center(center)
-          .add(po.interact());
-
-      var pt = map.locationPoint({lat: 0, lon: 0});
+      pt = this.map.locationPoint({lat: 0, lon: 0});
 
       console.log([pt.x, pt.y])
 
-      var projection = d3.geo.mercator()
+      this.projection = d3.geo.mercator()
         .translate([pt.x, pt.y])
-        .scale(Math.pow(2, 4.5) * 256)
+        .scale(Math.pow(2, this.map.zoom()) * 256)
 
 
-      var greatArc = d3.geo.greatArc()
+      this.greatArc = d3.geo.greatArc()
         .source(function(d) { return d.from})
         .target(function(d) { return d.to});
-      var path = d3.geo.path().projection(projection); 
+      this.path = d3.geo.path().projection(this.projection); 
 
-
-      var data = SchoolMaps.schools.toJSON();
-      // console.log(data)
-
-      var links = SchoolMaps.Utils.getLinks();
-
-        // Create the map object, add it to #map
-
-        // Add the CloudMade image tiles as a base layer
-      map.add(po.image()
-          .url(po.url("http://{S}tile.cloudmade.com"
+              // Add the CloudMade image tiles as a base layer
+      this.map.add(this.po.image()
+          .url(this.po.url("http://{S}tile.cloudmade.com"
           + "/cab4b4cb386f4890b042a94ef2b87332" // http://cloudmade.com/register
-          // + "/2400/256/{Z}/{X}/{Y}.png")
-          // + "/77933/256/{Z}/{X}/{Y}.png")
-          + "/15434/256/{Z}/{X}/{Y}.png")
+           // + "/2400/256/{Z}/{X}/{Y}.png")
+           //+ "/77933/256/{Z}/{X}/{Y}.png")
+           // + "/31408/256/{Z}/{X}/{Y}.png")
+           + "/53991/256/{Z}/{X}/{Y}.png")
           .hosts(["a.", "b.", "c.", ""])));
 
         // Add the compass control on top.
-      map.add(po.compass()
+      this.map.add(this.po.compass()
           .position("bottom-left")
           .pan("small"));
 
-      var colorScale = d3.scale.linear()
-        .range(["#A5EDDA", "#FE326B"])
+
+    },
+    render : function () {
+      
+      //var center = {lon: -98.5795, lat: 37.828175};
+      var that = this;
+      var year = this.year
+
+      var data = SchoolMaps.schools.where({
+
+        columns: ['lat', 'lon', 'name', 'students', 'year', 'attainment'],
+
+        // and only where the values are > 1
+        rows: function(row) {
+          return row.year == year;
+        }
+      }).toJSON();
+      console.log(data)
+
+      //this.scale.domain(d3.extent(data, function(d) {return d.students}));
+
+      //var links = SchoolMaps.Utils.getLinks(year);
+      var links = []
+        // Create the map object, add it to #map
+
+
+      
+
+
 
 
       // Insert our layer beneath the compass.
-      var schoolsLayer = d3.select("#map svg").insert("svg:g", ".compass").attr("class", "schools");
+      var schoolsLayer = d3.select("#map svg").selectAll('g.schools').data([data])
+
+      schoolsLayer.enter().insert("svg:g", ".compass").attr("class", "schools");
 
       // Add an svg:g for each station.
-      var marker = schoolsLayer.selectAll("g")
-          .data(data)
-        .enter().append("svg:g")
-          .attr("transform", transform);
+      var marker = schoolsLayer.selectAll("g.marker")
+          .data(function(d) { return d });
+
+
+      var markerExit = marker.exit()
+
+      markerExit.remove();
+      var fmt = d3.format('n');
+      var markerEnter = marker.enter().append("svg:g").attr("class","marker")
+          .attr("rel", "tooltip")
+          .attr("title", function(d) { 
+            var str = d.name + " - std:" + d.students + " - att:" + fmt(d.attainment);
+            return str
+          })
+          .attr("transform", function(d) {
+            return that.transform(d);
+          });
 
       // Add a circle.
-      marker.append("svg:circle")
+      markerEnter.append("svg:circle")
           .style("stroke", "#70A194")
+          .style("opacity", 0.5)
           .style("fill", function(d) {
-            return colorScale(0);
+            return that.colorScale(d.attainment);
           })
-          .attr("r", 4.5);
+          .attr("r", function (d) {
+            return that.scale(d.students);
+          });
 
       // Add a label.
-      marker.append("svg:text")
-          .attr("x", 7)
-          .attr("dy", ".31em")
-          .text(function(d) { return d.name.substring(0,1); });
+      // marker.append("svg:text")
+      //     .attr("x", 7)
+      //     .attr("dy", ".31em")
+      //     .text(function(d) { 
+      //       //return '';
+      //       return d.name;//.substring(0,1); 
+      //     });
 
       // insert another layer
       var linksLayer = d3.select("#map svg").insert("svg:g", ".compass").attr("class", "links");
 
       var link = linksLayer.selectAll("g")
           .data(links)
-          .enter()
+
+      link.enter()
           .append("svg:path")
           .style("opacity", "0.1")
           .style("stroke", "#FE326B")
           .attr("class", "link");
 
-      link.attr("d", function(d) {
-        return path(greatArc(d))
-      })
 
+      link.exit().remove();
+
+      var map = this.map;
+
+      link.attr("d", function(d) {
+        return that.path(that.greatArc(d))
+      })
 
 
       // Whenever the map moves, update the marker positions.
       map.on("move", function() {
-        updateProjection();
-        schoolsLayer.selectAll("g").attr("transform", transform);
+        that.updateProjection();
+        schoolsLayer.selectAll("g.marker").attr("transform", function(d) {
+          return that.transform(d)
+          });
         linksLayer.selectAll("path").attr("d", function(d) {
-            return path(greatArc(d))
+            return that.path(that.greatArc(d))
           })
       });
       
       // do the same when we resize the map
       map.on("resize", function() {
-        updateProjection();
-        schoolsLayer.selectAll("g").attr("transform", transform);
+        that.updateProjection();
+        schoolsLayer.selectAll("g.marker").attr("transform", function(d) {
+          return that.transform(d)
+          });
         linksLayer.selectAll("path").attr("d", function(d) {
-            return path(greatArc(d))
+            return that.path(that.greatArc(d))
           })
       });
 
-
-      function transform(d) {
-        var pt = {lon: d.lon, lat: d.lat}
-        var dt = map.locationPoint(pt);
-        return "translate(" + dt.x + "," + dt.y + ")";
-      }
-
-      function updateProjection() {
-        var zero = map.locationPoint({lat: 0, lon: 0});
-        zero = [zero.x, zero.y]
-        scale = map.zoom()
-        projection
-          .translate(zero)
-          .scale(Math.pow(2, scale) * 256);
-
-      }
       
+      $(".marker").tooltip();
+    },
+    setYear : function(year) {
+      this.year = year;
+      this.render();
+    },
+    transform : function(d) {
+        var pt = {lon: d.lon, lat: d.lat}
+        var dt = this.map.locationPoint(pt);
+        return "translate(" + dt.x + "," + dt.y + ")";
+    },
 
+    updateProjection : function () {
+        var zero = this.map.locationPoint({lat: 0, lon: 0});
+        zero = [zero.x, zero.y]
+        var zoom = this.map.zoom();
+        this.projection
+          .translate(zero)
+          .scale(Math.pow(2, zoom) * 256);
 
-    }
+      }
 
   })
 
 
   SchoolMaps.Utils = {
 
-    getLinks: function() {
+    getLinks: function(year) {
       links = [];
-      SchoolMaps.links.rows(function(row) {
+      var rows = SchoolMaps.links.where({
+        rows: function(row) {
+          var date = new Date(row.date);
+          return (date.getFullYear() === year)
+          //return true;
+        }
+      }).toJSON();
+      console.log(rows.length, "ROWS GRABBED for year", year);
+
+      rows.forEach(function(row) {
         var from = SchoolMaps.Utils.getSchoolById(row.from);
         var to = SchoolMaps.Utils.getSchoolById(row.to);
-        from = [from[0].lon, from[0].lat];
-        to = [to[0].lon, to[0].lat];
-        links.push({from:from, to:to});
-      });
-
+        try {
+          from = [from[0].lon, from[0].lat];
+          to = [to[0].lon, to[0].lat];
+          links.push({from:from, to:to});
+        } catch (e) {
+          //console.log("throwing away row");
+        }
+      })
       console.log(links)
 
       return links;
@@ -313,9 +396,8 @@ define([], function() {
 
     getSchoolById: function(id) {
       var rows = SchoolMaps.schools.rows(function(row) {
-          return (row.id == id);
+          return (row.instid == id);
         });
-
       return rows.toJSON()
 
     }
