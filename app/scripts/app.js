@@ -180,7 +180,7 @@ define([], function() {
       this.container = d3.select("#map").append("svg:svg").node();
       this.scale = d3.scale.linear().range([5,30]).domain([0,1500]);
       this.colorScale = d3.scale.linear()
-        .range(["#FE326B","#888","#A5EDDA"]).domain([-50,0,50])
+        .range(["#FE326B","#888","#64C832"]).domain([-50,0,50])
         //.range(["#FE326B", "#FE326B"])
       this.year = 2010;
       this.po = org.polymaps;
