@@ -2,9 +2,26 @@ define([], function() {
 
   // namespace
   var SchoolMaps = {
-
+    Spinner : new Spinner({
+        lines: 11, // The number of lines to draw
+        length: 4, // The length of each line
+        width: 2, // The line thickness
+        radius: 6, // The radius of the inner circle
+        rotate: 0, // The rotation offset
+        color: '#000', // //rgb or //rrggbb
+        speed: 1, // Rounds per second
+        trail: 10, // Afterglow percentage
+        shadow: false, // Whether to render a shadow
+        hwaccel: true, // Whether to use hardware acceleration
+        className: 'spinner', // The CSS class to assign to the spinner
+        zIndex: 2e9, // The z-index (defaults to 2000000000)
+        top: 'auto', // Top position relative to parent in px
+        left: 'auto' // Left position relative to parent in px
+      }),
     // container for our application views
     Views : {},
+    // container for our application models
+    Models : {},
     // application router
     Router : Backbone.Router.extend({
 
@@ -13,7 +30,9 @@ define([], function() {
       },
 
       index : function() {
-        
+        var target = document.getElementById('map');
+        console.log(target)
+        SchoolMaps.Spinner.spin(target);
         // configuration parameters that are used throughout the application:
         SchoolMaps.config = {
           // Define the start of the period we're interested in 
@@ -88,7 +107,7 @@ define([], function() {
         // (source = )
         SchoolMaps.schools = new Miso.Dataset({
           
-          url: "data/schools.csv",
+          url: "data/schools_agg.csv",
           delimiter: ',',
           //columns: SchoolMaps.schoolColumns,
           
@@ -99,14 +118,16 @@ define([], function() {
 
         SchoolMaps.links = new Miso.Dataset({
 
-          url: "data/links.csv",
-          delimiter: ",",
+          url: "data/links_agg.tsv",
+          delimiter: "\t",
 
           ready : function() {
             console.log("Links Ready!")
           }
 
         })
+
+        
 
         _.when(SchoolMaps.schools.fetch(), SchoolMaps.links.fetch()).then(function() {
           console.log("data loaded", SchoolMaps.schools.toJSON())
@@ -137,39 +158,111 @@ define([], function() {
     initialize : function() {
       this.views = {};
     },
-    events: {
-      'change #slide' : 'onSlide'
-    },
+    
     render : function() {
       // this.views.title = new SchoolMaps.Views.Title();
       // this.views.footer = new SchoolMaps.View.Footer();
       // this.views.dateranges = new SchoolMaps.Views.DateRanges();
-      this.views.map = new SchoolMaps.Views.Map();
-      this.views.years = new SchoolMaps.Views.Years();
+      this.model = new SchoolMaps.Models.Year({year:2002, zips: true, migs: true});
+      this.views.map = new SchoolMaps.Views.Map({model: this.model});
+      this.views.years = new SchoolMaps.Views.Years({model: this.model});
       // this.views.title.render();
       // this.views.dateranges.render();
       this.views.map.render();
       this.views.years.render();
+    }
+
+  });
+
+  SchoolMaps.Models.Year = Backbone.Model.extend();
+
+  SchoolMaps.Views.Years = Backbone.View.extend({
+    el: '#slider',
+    template: _.template($('#slider-template').html()),
+    events: {
+      'click button#play' : 'playPause',
+      'click button#migs' : 'migs',
+      'click button#zips' : 'zips',
+      'change #slide' : 'onSlide'
+    },
+    initialize: function(options) {
+      this.model.bind('change', this.render, this)
+      this.state = 'pause';
+      var that = this;
+      this.interval = setInterval(function() {
+        that.yearStep()
+      }, 1500);
+    },
+    render: function() {
+      $(this.el).html(this.template(this.model.toJSON()))
+      this.setButtonState();
+    },
+    playPause: function () {
+      console.log ('hey!')
+      if (this.state === 'pause') {
+        this.state = 'play';
+        this.setButtonState();
+      } else {
+        this.state = 'pause'
+        this.setButtonState();
+      } 
+    },
+    setButtonState: function() {
+      if (this.model.get('zips')) {
+        $('button#zips').addClass("active")
+      } else {
+        $('button#zips').removeClass("active")
+      }
+      if (this.model.get('migs')) {
+        $('button#migs').addClass("active")
+      } else {
+        $('button#migs').removeClass("active")
+      }
+      if (this.state === 'play') {
+        $('button#play').addClass("active")
+        $('#playPause').removeClass("icon-play").addClass("icon-pause");
+      } else {
+        $('button#play').removeClass("active")
+        $('#playPause').removeClass("icon-pause").addClass("icon-play").removeClass("active");
+      } 
     },
     onSlide: function(event) {
       var year = +event.target.value;
       console.log(year);
       $('#year').html(year);
-      this.views.map.setYear(year)
-    }
-
-  });
-
-  SchoolMaps.Views.Years = Backbone.View.extend({
-    el: '#slider',
-    template: _.template($('#slider-template').html()),
-
-    initialize: function(options) {
-
+      this.model.set({year: year})
     },
-    render: function() {
-      $(this.el).html(this.template())
+    yearStep: function() {
+      //console.log(this.state)
+      if (this.state === 'play') {
+        var year = this.model.get('year');
+        if (year < 2012) {
+          year++;
+        } else {
+          year = 2001;
+        }
+        this.model.set({year: year});
+      }
+    },
+    zips: function() {
+      if (this.model.get('zips')) {
+        // $('button#zips').removeClass("active")
+        this.model.set({zips:false});
+      } else {
+        // $('button#zips').addClass("active")
+        this.model.set({zips:true});
+      }
+    },
+    migs: function() {
+      if (this.model.get('migs')) {
+        // $('button#migs').removeClass("active")
+        this.model.set({migs:false});
+      } else {
+        // $('button#migs').addClass("active")
+        this.model.set({migs:true});
+      }
     }
+
   });
 
 
@@ -177,20 +270,21 @@ define([], function() {
 
     el: '#map',
     initialize: function(options) {
+      this.model.bind('change', this.render, this);
       this.container = d3.select("#map").append("svg:svg").node();
-      this.scale = d3.scale.linear().range([5,30]).domain([0,1500]);
+      this.zipscale = d3.scale.linear().range([5,30]).domain([0,5000]);
+      this.migscale = d3.scale.linear().range([0,10]).domain([0,100]);
       this.colorScale = d3.scale.linear()
         .range(["#FE326B","#888","#64C832"]).domain([-50,0,50])
         //.range(["#FE326B", "#FE326B"])
-      this.year = 2010;
       this.po = org.polymaps;
+      this.duration = 700;
       this.center = {lat: 40.00, lon:-75.1642};
       this.map = this.po.map()
           .container(this.container)
           .zoom(11)
           .center(this.center)
           .add(this.po.interact());
-
       pt = this.map.locationPoint({lat: 0, lon: 0});
 
       console.log([pt.x, pt.y])
@@ -226,121 +320,135 @@ define([], function() {
       
       //var center = {lon: -98.5795, lat: 37.828175};
       var that = this;
-      var year = this.year
+      var year = this.model.get('year');
 
+
+      var data = []
+      if (this.model.get('zips')) {
+        console.log('draw zips')
       var data = SchoolMaps.schools.where({
-
         columns: ['lat', 'lon', 'name', 'students', 'year', 'attainment'],
-
         // and only where the values are > 1
         rows: function(row) {
-          return row.year == year;
+          return +row.year === +year;
         }
       }).toJSON();
-      console.log(data)
+      }
 
-      //this.scale.domain(d3.extent(data, function(d) {return d.students}));
-
-      //var links = SchoolMaps.Utils.getLinks(year);
       var links = []
-        // Create the map object, add it to #map
+      if (this.model.get('migs')) {
+        console.log('draw migs')
+        var links = SchoolMaps.links.where({
+          columns: ['olat', 'olon', 'dlat', 'dlon','students', 'oattainment', 'dattainment', 'studentsup',  'studentsdown',  'studentsame'],
+
+          // and only where the values are > 1
+          rows: function(row) {
+            return +row.year === +year;
+          }
+        }).toJSON();
+      }
 
 
-      
+      var fmt = d3.format('n');
 
-
-
-
-      // Insert our layer beneath the compass.
+      // Select our layer beneath the compass.
       var schoolsLayer = d3.select("#map svg").selectAll('g.schools').data([data])
-
+      // if it's not there add it under the .compass
       schoolsLayer.enter().insert("svg:g", ".compass").attr("class", "schools");
 
       // Add an svg:g for each station.
-      var marker = schoolsLayer.selectAll("g.marker")
+      var marker = schoolsLayer.selectAll("circle")
           .data(function(d) { return d });
 
 
-      var markerExit = marker.exit()
+      marker.exit().selectAll('circle')
+        .transition()
+        .duration(this.duration)
+        .attr("r", 0).remove()
 
-      markerExit.remove();
-      var fmt = d3.format('n');
-      var markerEnter = marker.enter().append("svg:g").attr("class","marker")
+      // add circles
+      marker.enter()
+          .append("svg:circle")
+          .attr("class","marker")
           .attr("rel", "tooltip")
+          .attr("r", 0)
           .attr("title", function(d) { 
-            var str = d.name + " - std:" + d.students + " - att:" + fmt(d.attainment);
+            var str = "std:" + d.students + " - att:" + fmt(d.attainment);
             return str
           })
           .attr("transform", function(d) {
             return that.transform(d);
-          });
+          })
 
-      // Add a circle.
-      markerEnter.append("svg:circle")
+      // update the circle sizes
+      schoolsLayer.selectAll("circle")    
+          .transition()
+          .duration(this.duration)
           .style("stroke", "#70A194")
           .style("opacity", 0.5)
           .style("fill", function(d) {
             return that.colorScale(d.attainment);
           })
           .attr("r", function (d) {
-            return that.scale(d.students);
+            return that.zipscale(d.students);
           });
 
-      // Add a label.
-      // marker.append("svg:text")
-      //     .attr("x", 7)
-      //     .attr("dy", ".31em")
-      //     .text(function(d) { 
-      //       //return '';
-      //       return d.name;//.substring(0,1); 
-      //     });
 
-      // insert another layer
-      var linksLayer = d3.select("#map svg").insert("svg:g", ".compass").attr("class", "links");
 
-      var link = linksLayer.selectAll("g")
-          .data(links)
+      var linksLayer = d3.select("#map svg").selectAll('g.links').data([links])
+      linksLayer.enter().insert("svg:g", ".compass").attr("class", "links");
+
+      var link = linksLayer.selectAll("path.link")
+          .data(function(d) { return d; });
 
       link.enter()
           .append("svg:path")
-          .style("opacity", "0.1")
-          .style("stroke", "#FE326B")
           .attr("class", "link");
 
+      link.exit()
+        .remove();
 
-      link.exit().remove();
-
-      var map = this.map;
-
-      link.attr("d", function(d) {
-        return that.path(that.greatArc(d))
-      })
+      linksLayer.selectAll('path')
+        .attr("d", function(d) {
+          return that.path(that.greatArc({from:[d.olon, d.olat], to:[d.dlon, d.dlat]}))
+        })
+        .style("opacity", 0)
+        .style("stroke-width", function(d) {
+            return that.migscale(d.students)
+          })
+        .style("stroke", function(d) {
+            return that.colorScale(d.dattainment);
+          })
+        .transition()
+        .duration(this.duration)
+        .style("opacity", 0.5)
 
 
       // Whenever the map moves, update the marker positions.
-      map.on("move", function() {
+      this.map.on("move", function() {
         that.updateProjection();
-        schoolsLayer.selectAll("g.marker").attr("transform", function(d) {
+        schoolsLayer.selectAll("circle.marker").attr("transform", function(d) {
           return that.transform(d)
           });
         linksLayer.selectAll("path").attr("d", function(d) {
-            return that.path(that.greatArc(d))
+            return that.path(that.greatArc({from:[d.olon, d.olat], to:[d.dlon, d.dlat]}))
           })
       });
       
       // do the same when we resize the map
-      map.on("resize", function() {
+      this.map.on("resize", function() {
         that.updateProjection();
-        schoolsLayer.selectAll("g.marker").attr("transform", function(d) {
+        schoolsLayer.selectAll("circle.marker").attr("transform", function(d) {
           return that.transform(d)
           });
         linksLayer.selectAll("path").attr("d", function(d) {
-            return that.path(that.greatArc(d))
+           return that.path(that.greatArc({from:[d.olon, d.olat], to:[d.dlon, d.dlat]}))
           })
       });
 
       
       $(".marker").tooltip();
+      SchoolMaps.Spinner.stop();
     },
     setYear : function(year) {
       this.year = year;
@@ -354,7 +462,7 @@ define([], function() {
 
     updateProjection : function () {
         var zero = this.map.locationPoint({lat: 0, lon: 0});
-        zero = [zero.x, zero.y]
+        zero = [zero.x, zero.y];
         var zoom = this.map.zoom();
         this.projection
           .translate(zero)

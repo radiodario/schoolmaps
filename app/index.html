@@ -34,7 +34,7 @@
             <div class="container">
                 <div class="row">
                 <div class="span8">
-                    <p><small>Created by the $TEAMNAME for the 2012 Pan-Pearson hackathon. Uses Backbone.js, polymaps, d3.js, miso dataset and several litres of coffee :)</small></p>
+                    <p><small>Created by the $TEAMNAME for the 2012 Pan-Pearson hackathon. Uses Backbone.js, Polymaps, d3.js, Miso dataset, Bootstrap and several litres of coffee :)</small></p>
 
                  </div>
                 <div class="span2">
@@ -48,8 +48,15 @@
         </footer>
 
         <script type="text/template" id="slider-template">
-            <span id="year" class="label">2010</span>
-            <input id="slide" type="range" min="2001" max="2012" step="1" value="2010" />
+            <div class="form-inline">
+                <div class="btn-group" data-toggle="buttons-checkbox">
+                  <button type="button" id="zips" class="btn btn-inverse active">Zips</button>
+                  <button type="button" id="migs" class="btn btn-inverse active">Migrations</button>
+                </div>
+                <button id="play" class="btn btn-inverted btn-inverse"><i id="playPause" class="icon-play icon-white"></i></button>
+                <span id="year" class="label"><%= year %></span>
+                <input id="slide" type="range" min="2002" max="2012" step="1" value="<%= year %>" />
+            </div>
         </script>
 
 
@@ -72,6 +79,7 @@
     <script src="scripts/vendor/miso.ds.deps.js"></script>
     <script src="scripts/vendor/d3.v2.js"></script>
     <script src="scripts/vendor/polymaps.js"></script>
+    <script src="scripts/vendor/spin.js"></script>
     <script src="scripts/vendor/bootstrap/bootstrap-affix.js"></script>
     <script src="scripts/vendor/bootstrap/bootstrap-alert.js"></script>
     <script src="scripts/vendor/bootstrap/bootstrap-dropdown.js"></script>
